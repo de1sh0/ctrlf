@@ -14,9 +14,9 @@ def send_email(to_email: str, subject: str, body: str, is_html: bool = False):
         msg["From"] = settings.SMTP_USERNAME
         msg["To"] = to_email
         msg["Subject"] = subject
-        msg.attach(MIMEText(body, "html" if is_html else "plain"))
-
-        server = smtplib.SMTP(settings.SMTP_SERVER, settings.SMTP_PORT)
+        # Added a short timeout. Render drops packets on port 587, causing a 5-minute hang
+        # if no timeout is specified before it finally fails and triggers our fallback logic.
+        server = smtplib.SMTP(settings.SMTP_SERVER, settings.SMTP_PORT, timeout=3)
         server.starttls()
         server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
         server.send_message(msg)
