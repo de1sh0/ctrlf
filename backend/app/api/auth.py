@@ -21,11 +21,22 @@ def generate_otp(length: int = 6) -> str:
 @router.post("/signup")
 def signup(payload: UserCreate, db: Session = Depends(get_db)):
     existing = db.query(User).filter(User.email == payload.email).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
-
+    
     code = generate_otp()
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+    
+    if existing:
+        if existing.is_verified:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        # If not verified, just update the OTP and resend
+        existing.mfa_code = code
+        existing.mfa_code_expires_at = expires_at
+        existing.hashed_password = hash_password(payload.password)
+        existing.name = payload.name
+        db.commit()
+        db.refresh(existing)
+        send_mfa_code(existing.email, code)
+        return {"message": "New verification code sent to your email", "email": existing.email}
 
     user = User(
         name=payload.name,
