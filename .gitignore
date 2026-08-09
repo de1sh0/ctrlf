@@ -4,3 +4,7 @@ node_modules/
 frontend/dist/
 backend/__pycache__/
 backend/.pytest_cache/
+# Secrets - never commit these
+backend/credentials.json
+backend/.env
+.env

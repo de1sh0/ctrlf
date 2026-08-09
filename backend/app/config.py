@@ -7,13 +7,18 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 days
     FRONTEND_URL: str = "http://localhost:8080"
+    BACKEND_URL: str = "http://localhost:8000"
     GROQ_API_KEY: str = ""
-    
+
     # SMTP Config
     SMTP_SERVER: str = "smtp.gmail.com"
     SMTP_PORT: int = 587
     SMTP_USERNAME: str = ""
     SMTP_PASSWORD: str = ""
+
+    # Google OAuth (replaces credentials.json)
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
 
     class Config:
         env_file = ".env"

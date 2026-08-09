@@ -16,14 +16,24 @@ services:
         value: HS256
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: 10080
+      # Set these after you know your Vercel URL (Step 2)
       - key: FRONTEND_URL
-        sync: false   # Set this to your Vercel URL after deployment
-      - key: GROQ_API_KEY
-        sync: false   # Add your Groq API key in Render dashboard
+        sync: false   # e.g. https://paisa-xyz.vercel.app
+      - key: BACKEND_URL
+        sync: false   # e.g. https://paisa-backend.onrender.com
+      # SMTP (Gmail App Password)
       - key: SMTP_USERNAME
-        sync: false   # Your Gmail address for sending emails
+        sync: false
       - key: SMTP_PASSWORD
-        sync: false   # Your Gmail App Password (NOT regular password)
+        sync: false
+      # Google OAuth credentials (from console.cloud.google.com)
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      # Groq LLM API key
+      - key: GROQ_API_KEY
+        sync: false
 
 databases:
   - name: paisa-db

@@ -14,11 +14,10 @@ from app.models.merchant_rule import MerchantRule
 from app.models.user import User
 from app.services.nlp_parser import parse_bank_email
 from app.services.email_service import send_budget_alert as _send_budget_alert
+from app.config import settings
 
-CREDENTIALS_FILE = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "../../credentials.json"
-)
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
+
 DEFAULT_BANK_SENDERS = [
     "alerts@hdfcbank.bank.in",
     "alerts@hdfcbank.com",
@@ -29,17 +28,27 @@ DEFAULT_BANK_SENDERS = [
 
 
 def get_credentials_for_user(token: GmailToken) -> Credentials:
-    with open(CREDENTIALS_FILE) as f:
-        client_config = json.load(f)["web"]
-    creds = Credentials(
+    # Prefer env vars (production); fall back to credentials.json (local dev)
+    if settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET:
+        client_id = settings.GOOGLE_CLIENT_ID
+        client_secret = settings.GOOGLE_CLIENT_SECRET
+    else:
+        creds_file = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "../../credentials.json"
+        )
+        with open(creds_file) as f:
+            cfg = json.load(f)["web"]
+        client_id = cfg["client_id"]
+        client_secret = cfg["client_secret"]
+
+    return Credentials(
         token=token.access_token,
         refresh_token=token.refresh_token,
         token_uri="https://oauth2.googleapis.com/token",
-        client_id=client_config["client_id"],
-        client_secret=client_config["client_secret"],
+        client_id=client_id,
+        client_secret=client_secret,
         scopes=SCOPES,
     )
-    return creds
 
 
 def refresh_token_if_needed(creds: Credentials, token: GmailToken, db: Session) -> Credentials:

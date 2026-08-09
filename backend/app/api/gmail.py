@@ -11,24 +11,47 @@ from app.core.deps import get_current_user
 from app.models.user import User
 from app.models.gmail_token import GmailToken
 from app.services.gmail_service import sync_gmail_for_user
+from app.config import settings
 import requests as req
 
 router = APIRouter(prefix="/api/gmail", tags=["gmail"])
 
-CREDENTIALS_FILE = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "../../credentials.json"
-)
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
-REDIRECT_URI = "http://localhost:8000/api/gmail/callback"
 
 # In-memory store for state + PKCE verifier
 _auth_store: dict[str, dict] = {}
 
 
-def load_client_config():
-    with open(CREDENTIALS_FILE) as f:
-        return json.load(f)["web"]
+def get_redirect_uri() -> str:
+    """Returns the OAuth redirect URI, always using the configured BACKEND_URL."""
+    return f"{settings.BACKEND_URL}/api/gmail/callback"
+
+
+def get_client_config() -> dict:
+    """
+    Returns OAuth client config from environment variables (preferred for production)
+    or falls back to credentials.json for local development.
+    """
+    if settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET:
+        return {
+            "client_id": settings.GOOGLE_CLIENT_ID,
+            "client_secret": settings.GOOGLE_CLIENT_SECRET,
+        }
+
+    # Fallback: load from credentials.json (local dev only)
+    credentials_file = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "../../credentials.json"
+    )
+    if os.path.exists(credentials_file):
+        with open(credentials_file) as f:
+            return json.load(f)["web"]
+
+    raise RuntimeError(
+        "Google OAuth credentials not found. "
+        "Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET env vars, "
+        "or provide a credentials.json file."
+    )
 
 
 def generate_pkce_pair():
@@ -48,20 +71,19 @@ def generate_pkce_pair():
 def connect_gmail(
     current_user: User = Depends(get_current_user),
 ):
-    config = load_client_config()
+    config = get_client_config()
     state = secrets.token_urlsafe(24)
     code_verifier, code_challenge = generate_pkce_pair()
 
-    # Store state → user_id + verifier
     _auth_store[state] = {
         "user_id": str(current_user.id),
         "code_verifier": code_verifier,
     }
 
-    # Build auth URL manually with PKCE
+    from urllib.parse import urlencode
     params = {
         "client_id": config["client_id"],
-        "redirect_uri": REDIRECT_URI,
+        "redirect_uri": get_redirect_uri(),
         "response_type": "code",
         "scope": " ".join(SCOPES),
         "access_type": "offline",
@@ -71,7 +93,6 @@ def connect_gmail(
         "code_challenge_method": "S256",
     }
 
-    from urllib.parse import urlencode
     auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
     return {"auth_url": auth_url}
 
@@ -83,25 +104,24 @@ def gmail_callback(
     db: Session = Depends(get_db),
 ):
     stored = _auth_store.pop(state, None)
+    frontend_url = settings.FRONTEND_URL
+
     if not stored:
-        return RedirectResponse(
-            url="http://localhost:8080/gmail?error=invalid_state"
-        )
+        return RedirectResponse(url=f"{frontend_url}/gmail?error=invalid_state")
 
     user_id = stored["user_id"]
     code_verifier = stored["code_verifier"]
 
     try:
-        config = load_client_config()
+        config = get_client_config()
 
-        # Exchange code for tokens WITH code_verifier
         response = req.post(
             "https://oauth2.googleapis.com/token",
             data={
                 "code": code,
                 "client_id": config["client_id"],
                 "client_secret": config["client_secret"],
-                "redirect_uri": REDIRECT_URI,
+                "redirect_uri": get_redirect_uri(),
                 "grant_type": "authorization_code",
                 "code_verifier": code_verifier,
             }
@@ -113,16 +133,14 @@ def gmail_callback(
         if "error" in token_json:
             print(f"Token error: {token_json}")
             return RedirectResponse(
-                url=f"http://localhost:8080/gmail?error={token_json['error']}"
+                url=f"{frontend_url}/gmail?error={token_json['error']}"
             )
 
         access_token = token_json.get("access_token")
         refresh_token = token_json.get("refresh_token")
 
         if not access_token:
-            return RedirectResponse(
-                url="http://localhost:8080/gmail?error=no_token"
-            )
+            return RedirectResponse(url=f"{frontend_url}/gmail?error=no_token")
 
         # Save to DB
         existing = db.query(GmailToken).filter(
@@ -151,11 +169,9 @@ def gmail_callback(
         print(f"OAuth callback error: {e}")
         import traceback
         traceback.print_exc()
-        return RedirectResponse(
-            url="http://localhost:8080/gmail?error=callback_failed"
-        )
+        return RedirectResponse(url=f"{frontend_url}/gmail?error=callback_failed")
 
-    return RedirectResponse(url="http://localhost:8080/gmail?connected=true")
+    return RedirectResponse(url=f"{frontend_url}/gmail?connected=true")
 
 
 @router.post("/sync")
