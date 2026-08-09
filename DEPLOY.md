@@ -35,6 +35,7 @@
 
    | Key | Value |
    |---|---|
+   | `PYTHON_VERSION` | `3.12.8` |
    | `DATABASE_URL` | Neon connection string from Step 1 |
    | `SECRET_KEY` | Any random 32-char string (e.g. generate at [randomkeygen.com](https://randomkeygen.com)) |
    | `ALGORITHM` | `HS256` |
