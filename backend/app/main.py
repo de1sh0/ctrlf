@@ -28,7 +28,11 @@ app.add_middleware(
         "http://localhost:8080",
         "http://127.0.0.1:8080",
         "http://192.168.31.172:8080",
+        "http://localhost:5173",
+        # Production: add your Vercel URL here after deployment
+        # "https://your-app.vercel.app",
     ],
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

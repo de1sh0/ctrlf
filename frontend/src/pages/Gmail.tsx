@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import Sidebar from "@/components/Sidebar";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { gmailApi } from "@/lib/api";
+import { gmailApi, authApi } from "@/lib/api";
 import { toast } from "sonner";
 import {
   Mail, Zap, Shield, Clock, CheckCircle2,
-  XCircle, RefreshCw, Link2, Unlink, ChevronRight,
+  XCircle, RefreshCw, Link2, Unlink, ChevronRight, Plus, X as XIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const HDFC_PATTERNS = [
   "Rs.340.00 debited from a/c XX1234. Info: Zomato order.",
@@ -20,6 +21,16 @@ const Gmail = () => {
   const queryClient = useQueryClient();
   const [syncing, setSyncing] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [newBankEmail, setNewBankEmail] = useState("");
+  const [bankEmails, setBankEmails] = useState<string[]>([]);
+  const [savingEmails, setSavingEmails] = useState(false);
+
+  // Load existing settings
+  useEffect(() => {
+    authApi.getSettings().then((s) => {
+      setBankEmails(s.bank_alert_emails || []);
+    }).catch(() => {});
+  }, []);
 
   const { data: status, isLoading, refetch } = useQuery({
     queryKey: ["gmail-status"],
@@ -55,6 +66,29 @@ const Gmail = () => {
       toast.success("Gmail disconnected");
     },
   });
+
+  const handleAddEmail = () => {
+    const trimmed = newBankEmail.trim().toLowerCase();
+    if (!trimmed || bankEmails.includes(trimmed)) return;
+    setBankEmails((prev) => [...prev, trimmed]);
+    setNewBankEmail("");
+  };
+
+  const handleRemoveEmail = (email: string) => {
+    setBankEmails((prev) => prev.filter((e) => e !== email));
+  };
+
+  const handleSaveEmails = async () => {
+    setSavingEmails(true);
+    try {
+      await authApi.updateSettings({ bank_alert_emails: bankEmails });
+      toast.success("Bank email addresses saved!");
+    } catch {
+      toast.error("Failed to save bank emails");
+    } finally {
+      setSavingEmails(false);
+    }
+  };
 
   const handleSync = async () => {
     setSyncing(true);
@@ -201,6 +235,48 @@ const Gmail = () => {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+
+        {/* Bank Email Configuration */}
+        <div className="bg-card rounded-2xl border border-border/40 p-6 mb-8">
+          <div className="flex items-center gap-2 mb-1">
+            <Mail className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-semibold text-foreground">Bank Alert Email Addresses</h3>
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">
+            Add the email addresses your bank uses to send transaction alerts (e.g. <span className="font-mono">alerts@hdfcbank.com</span>).
+            Only emails from these addresses will be synced.
+          </p>
+
+          <div className="flex flex-wrap gap-2 mb-4">
+            {bankEmails.map((em) => (
+              <span key={em} className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary text-xs rounded-full font-mono">
+                {em}
+                <button onClick={() => handleRemoveEmail(em)} className="hover:text-destructive transition-colors">
+                  <XIcon className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+            {bankEmails.length === 0 && (
+              <p className="text-xs text-muted-foreground italic">No bank emails added yet — using default HDFC addresses.</p>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <Input
+              value={newBankEmail}
+              onChange={(e) => setNewBankEmail(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddEmail())}
+              placeholder="alerts@yourbank.com"
+              className="flex-1 h-9 text-sm rounded-xl bg-muted/40 border-border/60 font-mono"
+            />
+            <Button size="sm" variant="outline" onClick={handleAddEmail} className="rounded-xl gap-1.5">
+              <Plus className="w-3.5 h-3.5" /> Add
+            </Button>
+            <Button size="sm" onClick={handleSaveEmails} disabled={savingEmails} className="rounded-xl">
+              {savingEmails ? "Saving..." : "Save"}
+            </Button>
           </div>
         </div>
 

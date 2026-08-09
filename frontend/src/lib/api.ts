@@ -40,6 +40,11 @@ export interface SignupPayload {
   password: string
 }
 
+export interface MFAVerifyPayload {
+  email: string
+  code: string
+}
+
 export interface AuthResponse {
   access_token: string
   token_type: string
@@ -47,6 +52,9 @@ export interface AuthResponse {
     id: string
     name: string
     email: string
+    is_verified: boolean
+    total_monthly_budget: number | null
+    bank_alert_emails: string[] | null
   }
 }
 
@@ -58,13 +66,29 @@ export const authApi = {
     }),
 
   signup: (data: SignupPayload) =>
-    request<AuthResponse>('/api/auth/signup', {
+    request<{ message: string; email: string }>('/api/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  verifyMfa: (data: MFAVerifyPayload) =>
+    request<AuthResponse>('/api/auth/verify-mfa', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
   me: () => request<AuthResponse['user']>('/api/auth/me'),
+
+  getSettings: () =>
+    request<{ total_monthly_budget: number | null; bank_alert_emails: string[] }>('/api/auth/settings'),
+
+  updateSettings: (data: { total_monthly_budget?: number; bank_alert_emails?: string[] }) =>
+    request<{ total_monthly_budget: number | null; bank_alert_emails: string[] }>('/api/auth/settings', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
 }
+
 
 // ── EXPENSES ─────────────────────────────────────────────
 export interface Expense {

@@ -10,13 +10,16 @@ from googleapiclient.errors import HttpError
 from sqlalchemy.orm import Session
 from app.models.gmail_token import GmailToken
 from app.models.expense import Expense, ExpenseType, ExpenseSource
-from app.services.nlp_parser import parse_hdfc_email
+from app.models.merchant_rule import MerchantRule
+from app.models.user import User
+from app.services.nlp_parser import parse_bank_email
+from app.services.email_service import send_budget_alert as _send_budget_alert
 
 CREDENTIALS_FILE = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "../../credentials.json"
 )
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
-BANK_SENDERS = [
+DEFAULT_BANK_SENDERS = [
     "alerts@hdfcbank.bank.in",
     "alerts@hdfcbank.com",
     "hdfcbank@hdfcbank.net",
@@ -96,6 +99,15 @@ def sync_gmail_for_user(user_id: str, db: Session) -> int:
         print(f"[Gmail] No token for user {user_id}")
         return 0
 
+    # Determine which bank senders to filter by
+    user = db.query(User).filter(User.id == user_id).first()
+    bank_senders = (
+        user.bank_alert_emails
+        if user and user.bank_alert_emails
+        else DEFAULT_BANK_SENDERS
+    )
+    print(f"[Gmail] Using bank senders: {bank_senders}")
+
     try:
         creds = get_credentials_for_user(token)
         creds = refresh_token_if_needed(creds, token, db)
@@ -113,10 +125,20 @@ def sync_gmail_for_user(user_id: str, db: Session) -> int:
         print(f"[Gmail] Already have {len(existing_upi_refs)} UPI refs in DB")
         print(f"[Gmail] Existing refs: {existing_upi_refs}")
 
+        # Load merchant rules for this user into a fast lookup dict
+        merchant_rules = db.query(MerchantRule).filter(
+            MerchantRule.user_id == user_id
+        ).all()
+        rules_map = {
+            rule.merchant_name.lower(): (rule.category, rule.emoji)
+            for rule in merchant_rules
+        }
+        print(f"[Gmail] Loaded {len(rules_map)} merchant rules")
+
         # Fetch from the 1st of the current month
         now = datetime.now()
         since_date = now.replace(day=1).strftime("%Y/%m/%d")
-        sender_query = " OR ".join([f"from:{s}" for s in BANK_SENDERS])
+        sender_query = " OR ".join([f"from:{s}" for s in bank_senders])
         query = f"({sender_query}) after:{since_date}"
         print(f"[Gmail] Query: {query}")
 
@@ -156,10 +178,18 @@ def sync_gmail_for_user(user_id: str, db: Session) -> int:
             if not text:
                 continue
 
-            parsed = parse_hdfc_email(text)
+            parsed = parse_bank_email(text)
             if not parsed:
                 print(f"[Gmail] Not a transaction — skipping")
                 continue
+
+            # Apply merchant memory rule if one exists
+            merchant_key = parsed["description"].lower()
+            if merchant_key in rules_map:
+                saved_category, saved_emoji = rules_map[merchant_key]
+                print(f"[Gmail] 🧠 Merchant rule found for '{parsed['description']}' → {saved_category}")
+                parsed["category"] = saved_category
+                parsed["emoji"] = saved_emoji
 
             upi_ref = parsed.get("upi_ref")
             print(f"[Gmail] UPI ref: {upi_ref}")
@@ -201,6 +231,12 @@ def sync_gmail_for_user(user_id: str, db: Session) -> int:
 
         db.commit()
         print(f"[Gmail] Done — {new_count} new expenses added")
+
+        # After sync, check if a budget alert should fire
+        if new_count > 0 and user and user.total_monthly_budget:
+            from app.api.expenses import check_and_send_budget_alert
+            check_and_send_budget_alert(user, db)
+
         return new_count
 
     except HttpError as e:

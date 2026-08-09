@@ -2,14 +2,39 @@ import Sidebar from "@/components/Sidebar";
 import { useExpenses } from "@/hooks/useExpenses";
 import { useBudgets } from "@/hooks/useBudgets";
 import { Progress } from "@/components/ui/progress";
-import { Wallet, TrendingUp, PiggyBank, Pencil, Check, X } from "lucide-react";
-import { useState } from "react";
+import { Wallet, TrendingUp, PiggyBank, Pencil, Check, X, BellRing } from "lucide-react";
+import { useState, useEffect } from "react";
+import { authApi } from "@/lib/api";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 const Budgets = () => {
   const { expenses } = useExpenses();
   const { budgets, updateBudget } = useBudgets();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftLimit, setDraftLimit] = useState<number>(0);
+  const [monthlyBudget, setMonthlyBudget] = useState<string>("");
+  const [savingBudget, setSavingBudget] = useState(false);
+
+  useEffect(() => {
+    authApi.getSettings().then((s) => {
+      if (s.total_monthly_budget) setMonthlyBudget(String(s.total_monthly_budget));
+    }).catch(() => {});
+  }, []);
+
+  const handleSaveMonthlyBudget = async () => {
+    const val = parseFloat(monthlyBudget);
+    if (isNaN(val) || val <= 0) { toast.error("Enter a valid budget amount"); return; }
+    setSavingBudget(true);
+    try {
+      await authApi.updateSettings({ total_monthly_budget: val });
+      toast.success("Monthly budget saved! You'll get email alerts at 25%, 50%, 75% and 100%.");
+    } catch {
+      toast.error("Failed to save budget");
+    } finally {
+      setSavingBudget(false);
+    }
+  };
 
   const categorySpending = expenses
     .filter((e) => e.type === "debit")
@@ -82,6 +107,30 @@ const Budgets = () => {
             <p className="text-2xl font-bold text-emerald-600">
               ₹{Math.max(totalBudget - totalSpent, 0).toLocaleString("en-IN")}
             </p>
+          </div>
+        </div>
+
+        {/* Monthly Budget Alert Card */}
+        <div className="bg-card rounded-2xl border border-border/40 p-6 mb-8">
+          <div className="flex items-center gap-2 mb-1">
+            <BellRing className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-semibold text-foreground">Monthly Budget Alert</h3>
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">
+            Set your total monthly spending limit. We'll email you when you cross 25%, 50%, 75%, and 100%.
+          </p>
+          <div className="flex gap-2 items-center">
+            <span className="text-muted-foreground text-sm">₹</span>
+            <input
+              type="number"
+              value={monthlyBudget}
+              onChange={(e) => setMonthlyBudget(e.target.value)}
+              placeholder="e.g. 50000"
+              className="flex-1 h-10 text-sm border border-border rounded-xl px-3 bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            <Button size="sm" onClick={handleSaveMonthlyBudget} disabled={savingBudget} className="rounded-xl">
+              {savingBudget ? "Saving..." : "Save & Enable Alerts"}
+            </Button>
           </div>
         </div>
 
