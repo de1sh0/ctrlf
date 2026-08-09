@@ -3,28 +3,33 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from app.config import settings
 
-def send_email(to_email: str, subject: str, body_text: str):
+def send_email(to_email: str, subject: str, body: str, is_html: bool = False):
     """Utility function to send an email via SMTP"""
-    if not settings.SMTP_USERNAME or not settings.SMTP_PASSWORD:
-        print(f"SMTP not configured. Mock sending email to {to_email}: {subject}")
-        return
-
-    msg = MIMEMultipart()
-    msg['From'] = settings.SMTP_USERNAME
-    msg['To'] = to_email
-    msg['Subject'] = subject
-
-    msg.attach(MIMEText(body_text, 'plain'))
-
     try:
+        if not settings.SMTP_USERNAME or not settings.SMTP_PASSWORD:
+            print(f"[Email Service - Local] To: {to_email} | Subject: {subject}\n{body}\n")
+            return
+
+        msg = MIMEMultipart()
+        msg["From"] = settings.SMTP_USERNAME
+        msg["To"] = to_email
+        msg["Subject"] = subject
+        msg.attach(MIMEText(body, "html" if is_html else "plain"))
+
         server = smtplib.SMTP(settings.SMTP_SERVER, settings.SMTP_PORT)
         server.starttls()
         server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
         server.send_message(msg)
         server.quit()
         print(f"Email sent successfully to {to_email}")
+        
     except Exception as e:
-        print(f"Failed to send email to {to_email}: {str(e)}")
+        print(f"Failed to send email to {to_email}: {e}")
+        # Fallback for Render Free Tier (blocks port 587)
+        print(f"--- FALLBACK LOG ---")
+        print(f"Subject: {subject}")
+        print(f"Body:\n{body}")
+        print(f"--------------------")
 
 def send_mfa_code(to_email: str, code: str):
     subject = "Your Paisa Verification Code"
