@@ -100,7 +100,7 @@ def parse_bank_email(body: str) -> dict | None:
         try:
             completion = client.chat.completions.create(
                 messages=messages,
-                model="llama3-70b-8192",
+                model="llama-3.1-70b-versatile",
                 temperature=0.0,
                 response_format={"type": "json_object"},
             )
