@@ -1,4 +1,5 @@
-import { LayoutGrid, ArrowLeftRight, Wallet, BarChart3, Mail, Tag, Sparkles, LogOut } from "lucide-react";
+import { useState } from "react";
+import { LayoutGrid, ArrowLeftRight, Wallet, BarChart3, Mail, Tag, Sparkles, LogOut, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -6,7 +7,7 @@ import { toast } from "sonner";
 const navItems = [
   { label: "MAIN", items: [
     { icon: LayoutGrid, label: "Overview",     path: "/" },
-    { icon: ArrowLeftRight, label: "Transactions", path: "/transactions", badge: "new" },
+    { icon: ArrowLeftRight, label: "Transactions", path: "/transactions" },
     { icon: Wallet,      label: "Budgets",      path: "/budgets" },
     { icon: BarChart3,   label: "Analytics",    path: "/analytics" },
   ]},
@@ -16,17 +17,13 @@ const navItems = [
   ]},
 ];
 
-const Sidebar = () => {
+const NavContent = ({ onClose }: { onClose?: () => void }) => {
   const navigate   = useNavigate();
   const location   = useLocation();
 
-  // Read real user from localStorage
   const storedUser = localStorage.getItem("paisa_user");
-  const user       = storedUser
-    ? JSON.parse(storedUser)
-    : { name: "User", email: "" };
-
-  const initials = user.name
+  const user       = storedUser ? JSON.parse(storedUser) : { name: "User", email: "" };
+  const initials   = user.name
     ? user.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
 
@@ -35,22 +32,29 @@ const Sidebar = () => {
     localStorage.removeItem("paisa_token");
     toast.success("Logged out successfully");
     navigate("/auth");
+    onClose?.();
   };
 
   return (
-    <aside className="w-60 min-h-screen bg-card/60 backdrop-blur-xl border-r border-border/40 flex flex-col py-8 px-5">
-
+    <div className="flex flex-col h-full py-8 px-5">
       {/* LOGO */}
-      <div className="flex items-center gap-3 mb-10 px-2">
-        <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-          <Sparkles className="w-5 h-5 text-primary" />
+      <div className="flex items-center justify-between mb-10 px-2">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold heading-display text-foreground">Ctrl F</h1>
+            <p className="text-[9px] tracking-[0.25em] uppercase text-muted-foreground font-medium">
+              Expense Tracker
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-xl font-semibold heading-display text-foreground">Ctrl F</h1>
-          <p className="text-[9px] tracking-[0.25em] uppercase text-muted-foreground font-medium">
-            Expense Tracker
-          </p>
-        </div>
+        {onClose && (
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors lg:hidden">
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* NAV */}
@@ -65,6 +69,7 @@ const Sidebar = () => {
                   <li key={item.label}>
                     <Link
                       to={item.path}
+                      onClick={onClose}
                       className={cn(
                         "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200",
                         isActive
@@ -74,11 +79,6 @@ const Sidebar = () => {
                     >
                       <item.icon className="w-[18px] h-[18px]" />
                       <span>{item.label}</span>
-                      {'badge' in item && item.badge && (
-                        <span className="ml-auto text-[10px] bg-primary/15 text-primary px-2 py-0.5 rounded-full font-semibold">
-                          {item.badge}
-                        </span>
-                      )}
                     </Link>
                   </li>
                 );
@@ -107,8 +107,54 @@ const Sidebar = () => {
           <span>Log out</span>
         </button>
       </div>
+    </div>
+  );
+};
 
-    </aside>
+const Sidebar = () => {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex w-60 min-h-screen bg-card/60 backdrop-blur-xl border-r border-border/40 flex-col">
+        <NavContent />
+      </aside>
+
+      {/* Mobile Top Bar */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-card/80 backdrop-blur-xl border-b border-border/40 flex items-center justify-between px-4 h-14">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-primary" />
+          </div>
+          <span className="text-base font-semibold heading-display text-foreground">Ctrl F</span>
+        </div>
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:bg-accent/60 hover:text-foreground transition-colors"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Mobile Drawer Overlay */}
+      {mobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Mobile Drawer */}
+      <aside
+        className={cn(
+          "lg:hidden fixed top-0 left-0 h-full z-50 w-72 bg-card border-r border-border/40 transform transition-transform duration-300 ease-in-out",
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        <NavContent onClose={() => setMobileOpen(false)} />
+      </aside>
+    </>
   );
 };
 

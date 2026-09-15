@@ -42,11 +42,11 @@ const Categories = () => {
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
-      <main className="flex-1 py-8 px-10 overflow-auto max-h-screen">
-        <div className="flex items-center justify-between mb-8">
+      <main className="flex-1 py-6 px-4 sm:px-8 lg:px-10 overflow-auto max-h-screen pt-20 lg:pt-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Categories</h1>
-            <p className="text-sm text-muted-foreground mt-1">Organize your expenses by category</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Categories</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Organize your expenses by category</p>
           </div>
           <Button className="gap-2 rounded-xl">
             <Plus className="w-4 h-4" />
@@ -54,7 +54,7 @@ const Categories = () => {
           </Button>
         </div>
 
-        <div className="grid grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {categoryData.map((cat) => {
             const percentage = totalSpent > 0 ? ((cat.total / totalSpent) * 100).toFixed(1) : "0";
             return (

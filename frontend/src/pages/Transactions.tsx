@@ -58,11 +58,11 @@ const Transactions = () => {
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
-      <main className="flex-1 py-8 px-10 overflow-auto max-h-screen">
-        <div className="flex items-center justify-between mb-8">
+      <main className="flex-1 py-6 px-4 sm:px-8 lg:px-10 overflow-auto max-h-screen pt-20 lg:pt-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Transactions</h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Transactions</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
               {expenses.length} total transactions
             </p>
           </div>
@@ -73,22 +73,22 @@ const Transactions = () => {
         </div>
 
         {/* Filters */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="relative flex-1 max-w-sm">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search transactions..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 h-11 rounded-xl bg-card border-border/60"
+              className="pl-10 h-11 rounded-xl bg-card border-border/60 w-full"
             />
           </div>
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-muted-foreground" />
+            <Filter className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="h-11 px-4 rounded-xl bg-card border border-border/60 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="flex-1 h-11 px-4 rounded-xl bg-card border border-border/60 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="all">All Categories</option>
               {categories.map((c) => (
@@ -170,7 +170,7 @@ const Transactions = () => {
         </div>
 
         <p className="text-xs text-muted-foreground mt-4 text-center">
-          💡 Hover over a transaction and click the ✏️ icon to fix its category. It will be remembered automatically next time.
+          💡 Tap the ✏️ icon on a transaction to fix its category. It'll be remembered automatically.
         </p>
       </main>
     </div>

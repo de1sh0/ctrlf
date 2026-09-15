@@ -17,15 +17,15 @@ const Index = () => {
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
-      <main className="flex-1 py-8 px-10 overflow-auto max-h-screen">
+      <main className="flex-1 py-6 px-4 sm:px-8 lg:px-10 overflow-auto max-h-screen pt-20 lg:pt-6">
         <Header onAddExpense={() => setShowAddExpense(true)} />
         <StatsCards />
         <TopCategory />
-        <div className="grid grid-cols-2 gap-5 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
           <RecentTransactions />
           <CategoryBreakdown />
         </div>
-        <div className="grid grid-cols-2 gap-5 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
           <BudgetHealth />
           <DailySpending />
         </div>

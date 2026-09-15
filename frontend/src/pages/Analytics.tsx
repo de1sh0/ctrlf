@@ -42,14 +42,14 @@ const Analytics = () => {
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
-      <main className="flex-1 py-8 px-10 overflow-auto max-h-screen">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground">Analytics</h1>
-          <p className="text-sm text-muted-foreground mt-1">Insights into your spending patterns</p>
+      <main className="flex-1 py-6 px-4 sm:px-8 lg:px-10 overflow-auto max-h-screen pt-20 lg:pt-6">
+        <div className="mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Analytics</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Insights into your spending patterns</p>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-5 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="bg-card rounded-2xl border border-border/40 p-6">
             <p className="text-sm text-muted-foreground mb-1">Total Spent</p>
             <p className="text-2xl font-bold text-foreground">₹{totalSpent.toLocaleString("en-IN")}</p>
@@ -64,7 +64,7 @@ const Analytics = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-5 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
           {/* Category Pie */}
           <div className="bg-card rounded-2xl border border-border/40 p-6">
             <h3 className="text-sm font-semibold text-foreground mb-4">Spending by Category</h3>

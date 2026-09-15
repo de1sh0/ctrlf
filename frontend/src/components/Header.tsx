@@ -49,10 +49,10 @@ const Header = ({ onAddExpense }: HeaderProps) => {
 
   return (
     <div className="mb-8 animate-in">
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <p className="text-sm text-muted-foreground font-medium">{getGreeting()}</p>
-          <h2 className="text-3xl font-bold text-foreground heading-display mt-0.5">
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground heading-display mt-0.5">
             {firstName}{" "}
             <span className="inline-block animate-[pulse-soft_3s_ease-in-out_infinite]">
               {new Date().getHours() < 18 ? "☀️" : "🌙"}
@@ -60,7 +60,7 @@ const Header = ({ onAddExpense }: HeaderProps) => {
           </h2>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {/* Month Navigator */}
           <div className="flex items-center gap-0.5 glass-card rounded-xl px-3 py-2">
             <button
@@ -129,7 +129,7 @@ const Header = ({ onAddExpense }: HeaderProps) => {
             <div>
               <p className="text-sm text-foreground">
                 Gmail sync active — auto-detecting{" "}
-                <span className="font-semibold">HDFC Bank</span> transactions
+                <span className="font-semibold">bank</span> transactions
               </p>
               <p className="text-sm text-muted-foreground">
                 Syncs every 5 minutes automatically

@@ -65,16 +65,16 @@ const Budgets = () => {
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
-      <main className="flex-1 py-8 px-10 overflow-auto max-h-screen">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground">Budgets</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+      <main className="flex-1 py-6 px-4 sm:px-8 lg:px-10 overflow-auto max-h-screen pt-20 lg:pt-6">
+        <div className="mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Budgets</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
             Click the pencil icon on any category to edit its limit
           </p>
         </div>
 
         {/* Summary */}
-        <div className="grid grid-cols-3 gap-5 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="bg-card rounded-2xl border border-border/40 p-6">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -111,25 +111,27 @@ const Budgets = () => {
         </div>
 
         {/* Monthly Budget Alert Card */}
-        <div className="bg-card rounded-2xl border border-border/40 p-6 mb-8">
+        <div className="bg-card rounded-2xl border border-border/40 p-5 sm:p-6 mb-6">
           <div className="flex items-center gap-2 mb-1">
             <BellRing className="w-4 h-4 text-primary" />
-            <h3 className="text-sm font-semibold text-foreground">Monthly Budget Alert</h3>
+            <h3 className="text-sm font-semibold text-foreground">Monthly Spending Limit</h3>
           </div>
           <p className="text-xs text-muted-foreground mb-4">
-            Set your total monthly spending limit. We'll email you when you cross 25%, 50%, 75%, and 100%.
+            Set your total monthly spending limit to track how much you spend overall.
           </p>
-          <div className="flex gap-2 items-center">
-            <span className="text-muted-foreground text-sm">₹</span>
-            <input
-              type="number"
-              value={monthlyBudget}
-              onChange={(e) => setMonthlyBudget(e.target.value)}
-              placeholder="e.g. 50000"
-              className="flex-1 h-10 text-sm border border-border rounded-xl px-3 bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-            <Button size="sm" onClick={handleSaveMonthlyBudget} disabled={savingBudget} className="rounded-xl">
-              {savingBudget ? "Saving..." : "Save & Enable Alerts"}
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex items-center gap-2 flex-1">
+              <span className="text-muted-foreground text-sm">₹</span>
+              <input
+                type="number"
+                value={monthlyBudget}
+                onChange={(e) => setMonthlyBudget(e.target.value)}
+                placeholder="e.g. 50000"
+                className="flex-1 h-10 text-sm border border-border rounded-xl px-3 bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+            <Button size="sm" onClick={handleSaveMonthlyBudget} disabled={savingBudget} className="rounded-xl h-10">
+              {savingBudget ? "Saving..." : "Save Limit"}
             </Button>
           </div>
         </div>

@@ -11,10 +11,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-const HDFC_PATTERNS = [
-  "Rs.340.00 debited from a/c XX1234. Info: Zomato order.",
-  "INR 1,240.00 debited. UPI/Swiggy/Food delivery.",
-  "Your a/c XX1234 credited with Rs.82,000.00. Salary.",
+const BANK_PATTERNS = [
+  "Rs.340.00 debited from a/c XX1234. Info: UPI/Zomato.",
+  "INR 1,240.00 debited. UPI/Swiggy Food/delivery ref 123.",
+  "Your a/c XX5678 credited with Rs.82,000.00. NEFT/Salary.",
+  "Sent Rs.500.00 via UPI to John Doe. Ref No: 987654321.",
 ];
 
 const Gmail = () => {
@@ -110,17 +111,17 @@ const Gmail = () => {
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
-      <main className="flex-1 py-8 px-10 overflow-auto max-h-screen">
+      <main className="flex-1 py-6 px-4 sm:px-8 lg:px-10 overflow-auto max-h-screen pt-20 lg:pt-6">
 
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground">Gmail Sync</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Automatically detect transactions from HDFC Bank email alerts
+        <div className="mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gmail Sync</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Auto-detect transactions from any bank's email alerts
           </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-5 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
 
           {/* Connection card */}
           <div className="col-span-2 bg-card rounded-2xl border border-border/40 p-6">
@@ -161,7 +162,7 @@ const Gmail = () => {
                       Auto-sync active
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Checking for new HDFC Bank emails every 5 minutes
+                      Auto-sync active for all your bank emails
                     </p>
                   </div>
                   <Button
@@ -215,13 +216,13 @@ const Gmail = () => {
           </div>
 
           {/* How it works */}
-          <div className="bg-card rounded-2xl border border-border/40 p-6">
+          <div className="col-span-1 bg-card rounded-2xl border border-border/40 p-6">
             <h3 className="text-sm font-semibold text-foreground mb-4">How it works</h3>
             <div className="space-y-4">
               {[
                 { icon: Link2, title: "Connect Gmail", desc: "One-time Google OAuth login" },
-                { icon: Mail, title: "We watch HDFC alerts", desc: "Only bank emails, nothing else" },
-                { icon: Zap, title: "AI parses them", desc: "spaCy + TF-IDF extracts amount & category" },
+                { icon: Mail, title: "Add your bank emails", desc: "Any bank — HDFC, ICICI, SBI, Axis…" },
+                { icon: Zap, title: "AI parses them", desc: "Groq AI extracts amount & category" },
                 { icon: CheckCircle2, title: "Auto-added", desc: "Appears on dashboard with ⚡ badge" },
               ].map((step, i) => (
                 <div key={i} className="flex items-start gap-3">
@@ -281,7 +282,7 @@ const Gmail = () => {
         </div>
 
         {/* Privacy + Email examples */}
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
           <div className="bg-card rounded-2xl border border-border/40 p-6">
             <div className="flex items-center gap-2 mb-4">
@@ -291,8 +292,8 @@ const Gmail = () => {
             <div className="space-y-3">
               {[
                 "Read-only access — we can never send emails on your behalf",
-                "Only HDFC Bank alert emails are read, everything else is ignored",
-                "OAuth tokens are encrypted and stored securely",
+                "Only your chosen bank alert emails are read, everything else is ignored",
+                "OAuth tokens are stored securely in an encrypted database",
                 "You can disconnect anytime and all tokens are deleted",
                 "We never store your email password",
               ].map((point, i) => (
@@ -310,7 +311,7 @@ const Gmail = () => {
               <h3 className="text-sm font-semibold text-foreground">Email patterns we detect</h3>
             </div>
             <div className="space-y-2">
-              {HDFC_PATTERNS.map((pattern, i) => (
+              {BANK_PATTERNS.map((pattern, i) => (
                 <div key={i} className="p-3 bg-muted/40 rounded-lg">
                   <p className="text-xs text-muted-foreground font-mono leading-relaxed">
                     {pattern}
