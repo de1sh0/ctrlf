@@ -39,20 +39,18 @@ def _get_client() -> Groq | None:
         return None
     return Groq(api_key=pool[_current_index])
 
-def _rotate_key(reason: str = "rate-limit") -> bool:
+def _rotate_key(reason: str = "rate-limit"):
     """
-    Advance to the next key in the pool.
-    Returns True if a new key is available, False if we've exhausted them all.
+    Advance to the next key in the pool, wrapping around to the start.
     """
     global _current_index
     pool = _get_pool()
-    next_index = _current_index + 1
-    if next_index < len(pool):
-        print(f"[Groq] Rotating key ({reason}): key #{_current_index + 1} → key #{next_index + 1} of {len(pool)}")
-        _current_index = next_index
-        return True
-    print(f"[Groq] All {len(pool)} key(s) exhausted. Giving up.")
-    return False
+    if not pool:
+        return
+
+    old_index = _current_index
+    _current_index = (_current_index + 1) % len(pool)
+    print(f"[Groq] Rotating key ({reason}): key #{old_index + 1} → key #{_current_index + 1} of {len(pool)}")
 
 
 # ── Main parser ───────────────────────────────────────────────────────────────
@@ -122,22 +120,17 @@ def parse_bank_email(body: str) -> dict | None:
 
         except RateLimitError:
             print(f"[Groq] Rate-limit hit on {key_label}. Rotating…")
-            rotated = _rotate_key("rate-limit")
-            if not rotated:
-                return None
+            _rotate_key("rate-limit")
             time.sleep(0.5)
 
         except AuthenticationError:
             print(f"[Groq] Invalid API key on {key_label}. Rotating…")
-            rotated = _rotate_key("invalid-key")
-            if not rotated:
-                print("[Groq] No more valid keys. Check your GROQ_API_KEY env vars in Render.")
-                return None
+            _rotate_key("invalid-key")
             time.sleep(0.1)
 
         except Exception as e:
             print(f"[LLM Error] Failed to parse email using {key_label}: {e}")
             return None
 
-    print("[Groq] Max rotation attempts reached. Skipping email.")
+    print(f"[Groq] All {max_attempts} keys exhausted for this email. Skipping.")
     return None
