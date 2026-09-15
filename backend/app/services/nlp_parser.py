@@ -1,6 +1,6 @@
 import json
 import time
-from groq import Groq, RateLimitError
+from groq import Groq, RateLimitError, AuthenticationError
 from app.config import settings
 
 # ── Key pool ──────────────────────────────────────────────────────────────────
@@ -121,13 +121,19 @@ def parse_bank_email(body: str) -> dict | None:
             }
 
         except RateLimitError:
-            print(f"[Groq] Rate-limit hit on {key_label}. Attempting rotation…")
+            print(f"[Groq] Rate-limit hit on {key_label}. Rotating…")
             rotated = _rotate_key("rate-limit")
             if not rotated:
-                print("[Groq] No more keys available. Email will be skipped.")
                 return None
-            # small pause before retrying with the new key
             time.sleep(0.5)
+
+        except AuthenticationError:
+            print(f"[Groq] Invalid API key on {key_label}. Rotating…")
+            rotated = _rotate_key("invalid-key")
+            if not rotated:
+                print("[Groq] No more valid keys. Check your GROQ_API_KEY env vars in Render.")
+                return None
+            time.sleep(0.1)
 
         except Exception as e:
             print(f"[LLM Error] Failed to parse email using {key_label}: {e}")
