@@ -45,13 +45,15 @@ def check_and_send_budget_alert(user: User, db: Session):
                 break  # already sent this threshold this month
 
             print(f"[Budget] Sending {threshold}% alert to {user.email}")
-            send_budget_alert(
-                to_email=user.email,
-                name=user.name,
-                threshold=threshold,
-                current_spending=total_spent,
-                budget=user.total_monthly_budget,
-            )
+            # --- BUDGET ALERT DISABLED ---
+            # Due to Render SMTP block, we won't send emails to avoid hangs.
+            # send_budget_alert(
+            #     to_emails=user.bank_alert_emails,
+            #     name=user.name,
+            #     threshold=threshold,
+            #     current_spending=total_spent,
+            #     budget=user.total_monthly_budget,
+            # )
 
             # Mark as sent and persist
             alerts_sent[alert_key] = True

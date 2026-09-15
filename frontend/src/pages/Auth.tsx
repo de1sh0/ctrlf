@@ -5,12 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
-type AuthStep = "form" | "otp";
-
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
-  const [step, setStep] = useState<AuthStep>("form");
-  const [pendingEmail, setPendingEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -38,34 +34,13 @@ const Auth = () => {
         navigate("/");
       } else {
         const res = await authApi.signup({ name, email, password });
-        setPendingEmail(res.email);
-        setStep("otp");
-        toast.success("Verification code sent to your email!");
+        localStorage.setItem("paisa_token", res.access_token);
+        localStorage.setItem("paisa_user", JSON.stringify(res.user));
+        toast.success("Welcome to Paisa 🎉");
+        navigate("/");
       }
     } catch (err: any) {
       toast.error(err.message || "Something went wrong");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!otp || otp.length !== 6) {
-      toast.error("Please enter the 6-digit code");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { authApi } = await import("@/lib/api");
-      const res = await authApi.verifyMfa({ email: pendingEmail, code: otp });
-      localStorage.setItem("paisa_token", res.access_token);
-      localStorage.setItem("paisa_user", JSON.stringify(res.user));
-      toast.success("Email verified! Welcome to Paisa 🎉");
-      navigate("/");
-    } catch (err: any) {
-      toast.error(err.message || "Invalid or expired code");
     } finally {
       setLoading(false);
     }
@@ -128,49 +103,7 @@ const Auth = () => {
             <h1 className="text-2xl font-bold heading-display text-foreground">Ctrl F</h1>
           </div>
 
-          {/* OTP Step */}
-          {step === "otp" ? (
-            <div>
-              <div className="mb-8 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <ShieldCheck className="w-8 h-8 text-primary" />
-                </div>
-                <h2 className="text-3xl font-bold text-foreground heading-display">Verify your email</h2>
-                <p className="text-muted-foreground mt-2">
-                  We sent a 6-digit code to <span className="font-medium text-foreground">{pendingEmail}</span>
-                </p>
-              </div>
-
-              <form onSubmit={handleVerifyOtp} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-foreground">Verification Code</label>
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                    placeholder="123456"
-                    className="h-14 text-center text-2xl tracking-[0.5em] rounded-xl bg-muted/40 border-border/60 focus:bg-card transition-colors font-mono"
-                  />
-                </div>
-
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Verifying..." : "Verify & Continue"}
-                  {!loading && <ArrowRight className="w-4 h-4 ml-2" />}
-                </Button>
-
-                <button
-                  type="button"
-                  onClick={() => setStep("form")}
-                  className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors text-center"
-                >
-                  ← Back to sign up
-                </button>
-              </form>
-            </div>
-          ) : (
-            <>
+          {/* Auth Forms */}
               <div className="mb-8">
                 <h2 className="text-3xl font-bold text-foreground heading-display">
                   {isLogin ? "Welcome back" : "Create account"}
@@ -296,8 +229,6 @@ const Auth = () => {
                 {" "}and{" "}
                 <span className="text-primary hover:underline cursor-pointer">Privacy Policy</span>
               </p>
-            </>
-          )}
         </div>
       </div>
     </div>

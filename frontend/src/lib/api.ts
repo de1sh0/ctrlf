@@ -66,13 +66,7 @@ export const authApi = {
     }),
 
   signup: (data: SignupPayload) =>
-    request<{ message: string; email: string }>('/api/auth/signup', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-
-  verifyMfa: (data: MFAVerifyPayload) =>
-    request<AuthResponse>('/api/auth/verify-mfa', {
+    request<AuthResponse>('/api/auth/signup', {
       method: 'POST',
       body: JSON.stringify(data),
     }),

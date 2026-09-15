@@ -18,72 +18,28 @@ def generate_otp(length: int = 6) -> str:
     return "".join(random.choices(string.digits, k=length))
 
 
-@router.post("/signup")
+@router.post("/signup", response_model=Token)
 def signup(payload: UserCreate, db: Session = Depends(get_db)):
     existing = db.query(User).filter(User.email == payload.email).first()
     
-    code = generate_otp()
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
-    
     if existing:
-        if existing.is_verified:
-            raise HTTPException(status_code=400, detail="Email already registered")
-        # If not verified, just update the OTP and resend
-        existing.mfa_code = code
-        existing.mfa_code_expires_at = expires_at
-        existing.hashed_password = hash_password(payload.password)
-        existing.name = payload.name
-        db.commit()
-        db.refresh(existing)
-        send_mfa_code(existing.email, code)
-        return {"message": "New verification code sent to your email", "email": existing.email}
+        raise HTTPException(status_code=400, detail="Email already registered")
 
     user = User(
         name=payload.name,
         email=payload.email,
         hashed_password=hash_password(payload.password),
-        is_verified=False,
-        mfa_code=code,
-        mfa_code_expires_at=expires_at,
+        is_verified=True,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
 
-    send_mfa_code(user.email, code)
-
-    return {"message": "Verification code sent to your email", "email": user.email}
-
-
-@router.post("/verify-mfa", response_model=Token)
-def verify_mfa(payload: MFAVerify, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == payload.email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    if user.is_verified:
-        raise HTTPException(status_code=400, detail="Account already verified")
-
-    if not user.mfa_code or user.mfa_code != payload.code:
-        raise HTTPException(status_code=400, detail="Invalid verification code")
-
-    now_utc = datetime.now(timezone.utc)
-    expires = user.mfa_code_expires_at
-    if expires.tzinfo is None:
-        expires = expires.replace(tzinfo=timezone.utc)
-    if now_utc > expires:
-        raise HTTPException(status_code=400, detail="Verification code expired")
-
-    user.is_verified = True
-    user.mfa_code = None
-    user.mfa_code_expires_at = None
-    db.commit()
-    db.refresh(user)
-
-    send_welcome_email(user.email, user.name)
-
     token = create_access_token({"sub": str(user.id)})
     return Token(access_token=token, token_type="bearer", user=UserOut.from_orm(user))
+
+
+
 
 
 @router.post("/login", response_model=Token)
@@ -91,12 +47,6 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == payload.email).first()
     if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
-
-    if not user.is_verified:
-        raise HTTPException(
-            status_code=403,
-            detail="Email not verified. Please check your inbox for the verification code."
-        )
 
     token = create_access_token({"sub": str(user.id)})
     return Token(access_token=token, token_type="bearer", user=UserOut.from_orm(user))
