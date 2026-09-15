@@ -3,10 +3,10 @@ import os
 import secrets
 import hashlib
 import base64
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, BackgroundTasks
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
-from app.database import get_db
+from app.database import get_db, SessionLocal
 from app.core.deps import get_current_user
 from app.models.user import User
 from app.models.gmail_token import GmailToken
@@ -20,6 +20,8 @@ SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
 
 # In-memory store for state + PKCE verifier
 _auth_store: dict[str, dict] = {}
+# Active syncs by user_id to prevent duplicates
+_active_syncs: set[str] = set()
 
 
 def get_redirect_uri() -> str:
@@ -176,11 +178,25 @@ def gmail_callback(
 
 @router.post("/sync")
 def manual_sync(
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    count = sync_gmail_for_user(str(current_user.id), db)
-    return {"synced": count, "message": f"Synced {count} new transactions"}
+    user_id_str = str(current_user.id)
+    if user_id_str in _active_syncs:
+        return {"synced": 0, "message": "A sync is already in progress"}
+
+    def run_sync():
+        bg_db = SessionLocal()
+        try:
+            sync_gmail_for_user(user_id_str, bg_db)
+        finally:
+            bg_db.close()
+            _active_syncs.discard(user_id_str)
+
+    _active_syncs.add(user_id_str)
+    background_tasks.add_task(run_sync)
+    return {"synced": 0, "message": "Sync started in the background. Transactions will appear shortly as they are processed."}
 
 
 @router.get("/status")

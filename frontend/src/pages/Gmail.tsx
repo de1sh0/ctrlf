@@ -97,10 +97,7 @@ const Gmail = () => {
       const res = await gmailApi.sync();
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
-      toast.success(res.synced > 0
-        ? `✅ Synced ${res.synced} new transaction${res.synced > 1 ? "s" : ""}!`
-        : "No new transactions found"
-      );
+      toast.success(res.message || "Sync started successfully");
     } catch (err: any) {
       toast.error(err.message || "Sync failed");
     } finally {
